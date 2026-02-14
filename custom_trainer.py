@@ -2,7 +2,6 @@ from torch import Tensor, import_ir_module, nn
 import torch
 from transformers import Trainer
 import numpy as np
-import robust_loss_pytorch
 from torch.nn.modules.loss import _Loss
 from torch.overrides import (has_torch_function, has_torch_function_unary, has_torch_function_variadic, handle_torch_function)
 from typing import Optional
@@ -19,7 +18,7 @@ class CustomTrainerMSE(Trainer):
         super().__init__(*args, **kwargs)
 
     
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels = inputs.get("labels") # Vou buscar as labels à variavel inputs e guardo em 'labels'
         inputs.pop('labels', None) # remover 'labels' da var inputs para não ser passado ao modelo
 
@@ -43,7 +42,7 @@ class CustomTrainerCCC(Trainer):
 
 
     # This functions overrides class Trainer's compute_loss function
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels = inputs.get("labels") 
         inputs.pop('labels', None) 
 
@@ -94,7 +93,7 @@ class CustomTrainerMSE_CCC(Trainer):
 
 
     # This functions overrides class Trainer's compute_loss function
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels = inputs.get("labels") # Vou buscar as labels à variavel inputs e guardo em 'labels'
         inputs.pop('labels', None) # remover 'labels' da var inputs para não ser passado ao modelo
 
@@ -147,6 +146,7 @@ class CustomTrainerRobustCCC(Trainer):
     ### From robust
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        import robust_loss_pytorch
         self.num_dims = 2 # 1, 2??
         self.adaptive = robust_loss_pytorch.adaptive.AdaptiveLossFunction(
             num_dims=self.num_dims, 
@@ -224,7 +224,7 @@ class CustomTrainerRobustCCC(Trainer):
     
     
     # This functions overrides class Trainer's compute_loss function
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         #Common to both
         labels = inputs.get("labels") # Vou buscar as labels à variavel inputs e guardo em 'labels'
         inputs.pop('labels', None) # remover 'labels' da var inputs para não ser passado ao modelo
@@ -277,6 +277,7 @@ class CustomTrainerRobust(Trainer):
     # TO USE with ROBUST LOSS
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        import robust_loss_pytorch
         self.num_dims = 2 
         self.adaptive = robust_loss_pytorch.adaptive.AdaptiveLossFunction(
             num_dims=self.num_dims, 
@@ -346,7 +347,7 @@ class CustomTrainerRobust(Trainer):
 
 
     # This functions overrides class Trainer's compute_loss function
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         labels = inputs.get("labels") # Vou buscar as labels à variavel inputs e guardo em 'labels'
         inputs.pop('labels', None) # remover 'labels' da var inputs para não ser passado ao modelo
 

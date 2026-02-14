@@ -1,4 +1,5 @@
 from transformers import RobertaForSequenceClassification, TrainingArguments, DataCollatorWithPadding, Trainer 
+import inspect
 from models import DistilBertForSequenceClassificationSig, XLMRobertaForSequenceClassificationSig
 from data_loader import MyDataset
 from custom_trainer import CustomTrainerMSE, CustomTrainerCCC, CustomTrainerRobust, CustomTrainerMSE_CCC, CustomTrainerRobustCCC
@@ -32,23 +33,33 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
         model = XLMRobertaForSequenceClassificationSig.from_pretrained(checkpoint, num_labels=2)
         batch_size = params['batch_size_xlmrL']
     
-    training_args = TrainingArguments(
+    training_args_kwargs = dict(
         output_dir=output_dir2,
         logging_dir='logs/logs2',
         logging_steps=200,
         per_device_train_batch_size=batch_size,
-        per_device_eval_batch_size=batch_size, 
+        per_device_eval_batch_size=batch_size,
         num_train_epochs=params['train_epochs'],
         learning_rate=params['lr'],
         weight_decay=params['weight_decay'],
-
         group_by_length=True,
-        evaluation_strategy="epoch", 
+        evaluation_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
         warmup_ratio=params['warmup_ratio'],
+        do_eval=True,
+        evaluate_during_training=True
         # report_to="wandb"
-        ) 
+    )
+
+    valid_kwargs = {
+        key: value
+        for key, value in training_args_kwargs.items()
+        if key in inspect.signature(TrainingArguments.__init__).parameters
+    }
+    if 'evaluation_strategy' not in valid_kwargs:
+        valid_kwargs.pop('load_best_model_at_end', None)
+    training_args = TrainingArguments(**valid_kwargs)
     
     
     
@@ -66,7 +77,6 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
         data_collator=data_collator,
         train_dataset=train_data,
         eval_dataset=val_data,    
-        tokenizer=train_data.tokenizer,
         compute_metrics=compute_metrics,
         )
     elif(loss == 'ccc'):
@@ -76,7 +86,6 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
         data_collator=data_collator,
         train_dataset=train_data,
         eval_dataset=val_data,    
-        tokenizer=train_data.tokenizer,
         compute_metrics=compute_metrics,
         )
     elif(loss == 'robust'):
@@ -86,7 +95,6 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
         data_collator=data_collator,
         train_dataset=train_data,
         eval_dataset=val_data,    
-        tokenizer=train_data.tokenizer,
         compute_metrics=compute_metrics,
         )
     elif(loss == 'mse+ccc'): 
@@ -96,7 +104,6 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
         data_collator=data_collator,
         train_dataset=train_data,
         eval_dataset=val_data,    
-        tokenizer=train_data.tokenizer,
         compute_metrics=compute_metrics,
         )
     elif(loss == 'robust+ccc'): 
@@ -106,7 +113,6 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
         data_collator=data_collator,
         train_dataset=train_data,
         eval_dataset=val_data,    
-        tokenizer=train_data.tokenizer,
         compute_metrics=compute_metrics,
         )
     
@@ -116,6 +122,7 @@ def training_fold2(model, loss, timestamp, params, dataset, preds_dir, checkpoin
     # eval
     preds1 = trainer2.predict(val_data)
   
+    preds_df1 = pd.DataFrame(preds1.predictions)
     run_metrics = preds1.metrics
     
     preds_df1.to_csv(preds_dir + "/predictions_fold1.csv")      # Write file with predictions on fold2 data

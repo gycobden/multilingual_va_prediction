@@ -19,18 +19,30 @@ class MyDataset(Dataset):
         elif(checkpoint == 'xlm-roberta-base'): 
             self.tokenizer = XLMRobertaTokenizer.from_pretrained(checkpoint)
 
-        df = pd.read_csv(filename,sep='\t',
-                quotechar='"',
-                engine='python', 
-                quoting=csv.QUOTE_NONE,
-                escapechar='\\',
-                keep_default_na=False,
-                dtype={'index':np.int32,'text':str,'valence':np.float64, 'arousal':np.float64})
-    
-        self.index = df['index'].to_list()
-        self.texts = df['text'].to_list()
-        self.valence = df['valence'].to_list()
-        self.arousal = df['arousal'].to_list()
+        df = pd.read_csv(
+            filename,
+            sep=',',
+            quotechar='"',
+            engine='python',
+            quoting=csv.QUOTE_MINIMAL,
+            doublequote=True,
+            keep_default_na=False
+        )
+
+        index_col = 'index' if 'index' in df.columns else 'id'
+        text_col = 'text'
+        valence_col = 'valence' if 'valence' in df.columns else 'V'
+        arousal_col = 'arousal' if 'arousal' in df.columns else 'A'
+
+        if text_col not in df.columns:
+            raise KeyError(f"Missing required text column '{text_col}' in {filename}.")
+        if valence_col not in df.columns or arousal_col not in df.columns:
+            raise KeyError(f"Missing required label columns '{valence_col}'/'{arousal_col}' in {filename}.")
+
+        self.index = df[index_col].to_list() if index_col in df.columns else list(range(len(df)))
+        self.texts = df[text_col].to_list()
+        self.valence = df[valence_col].astype(np.float64).to_list()
+        self.arousal = df[arousal_col].astype(np.float64).to_list()
         self.maxlen = maxlen
 
     def __getitem__(self, idx):

@@ -1,0 +1,13 @@
+torch
+transformers
+accelerate>=1.1.0
+datasets
+pandas
+numpy
+scikit-learn
+scipy
+PyYAML
+
+# Optional: robust-loss-pytorch for robust loss functions
+# Install with: pip install git+https://github.com/google/robust_loss_pytorch.git
+# (Currently unavailable on PyPI; requires manual git installation)
